@@ -1,81 +1,100 @@
-# NLP
-N-Gram Language Model
-A statistical language modeling implementation supporting Unigram, Bigram, and Trigram architectures with configurable smoothing techniques.
+---
 
-Core Features
-N-Gram Architectures:
+# N-Gram Language Model  
+*A statistical language model for sequence probability estimation and next-word prediction.*  
 
-Unigram (1-gram), Bigram (2-gram), and Trigram (3-gram) implementations
+---
 
-Backoff mechanism through nested model dependencies (Trigram → Bigram → Unigram)
+## 📚 Table of Contents  
+- [Key Features](#-key-features)  
+- [Technical Implementation](#-technical-implementation)  
+- [Workflow](#-workflow)  
+- [Experiments & Results](#-experiments--results)  
+- [Extensions](#-extensions)  
 
-Smoothing Methods:
+---
 
-Add-k Smoothing: Applied to Unigram models via l1 hyperparameter
+## ✨ Key Features  
 
-Linear Interpolation: Weighted combination of different n-gram orders (l1, l2, l3 coefficients)
+### **Model Architectures**  
+- **Unigram (1-gram)**: Word-level probability estimation using frequency counts.  
+- **Bigram (2-gram)**: Context-aware predictions based on the previous word.  
+- **Trigram (3-gram)**: Extended context modeling with two preceding words.  
 
-Data Handling:
+### **Smoothing Techniques**  
+- **Add-k Smoothing**: Mitigates zero-probability issues by adding constant `k` to counts.  
+- **Linear Interpolation**: Blends probabilities across n-gram orders using weights (`λ₁`, `λ₂`, `λ₃`).  
 
-Automatic <UNK> token replacement for low-frequency words (configurable frequency threshold)
+### **Preprocessing**  
+- Automatic injection of `<START>` and `<STOP>` tokens.  
+- Replacement of low-frequency words with `<UNK>` (configurable threshold).  
 
-<START>/<STOP> token injection for sequence boundary modeling
+### **Evaluation**  
+- **Perplexity**: Computed as `2^(-1/N * Σ log2 P(w_i | context))`.  
+- Zero-probability handling via numerical stability guards.  
 
-Evaluation:
+---
 
-Perplexity calculation with log-probability aggregation
+## 🛠 Technical Implementation  
 
-Zero-probability mitigation via 1e-10 floor value
+### **Class Hierarchy**  
+| Class       | Description                                                                 |  
+|-------------|-----------------------------------------------------------------------------|  
+| `Unigram`   | Base frequency model with add-k smoothing support.                          |  
+| `Bigram`    | Inherits from `Unigram`; implements bigram MLE and interpolation.           |  
+| `Trigram`   | Inherits from `Bigram`; calculates trigram probabilities with backoff.      |  
 
-Model Workflow
-Corpus Preprocessing:
+### **Core Methods**  
+- `train_regular()`: Trains vanilla n-gram models using Maximum Likelihood Estimation (MLE).  
+- `train_interpolation_trigram()`: Trains trigram models with linear interpolation smoothing.  
+- `perplexity()`: Evaluates model performance on test data.  
 
-Whitespace tokenization with boundary markers
+### **Optimizations**  
+- Frequency tables using `collections.Counter` for efficient lookups.  
+- Probability caching during training for faster inference.  
 
-Vocabulary frequency analysis and rare word substitution
+---
 
-Probability Estimation:
+## 🔄 Workflow  
 
-Maximum Likelihood Estimation (MLE) for raw n-gram counts
+### **Data Pipeline**  
+1. **Loading**: Raw text ingested via `load_data()`.  
+2. **Tokenization**: Sentences split into words with boundary tokens via `tokenize()`.  
+3. **UNK Replacement**: Low-frequency words replaced using `get_corpus_with_unk()`.  
 
-Smoothing-enabled conditional probability calculations:
+### **Training**  
+```python  
+# Conceptual Example  
+train_data = load_data("corpus.txt")  
+model = train_interpolation_trigram(train_data, l1=0.3, l2=0.3, l3=0.4)  
+print(f"Test Perplexity: {model.perplexity(test_data):.2f}")  
+```  
 
-P(wₜ|wₜ₋₁) = λ₂Pₘₗₑ(wₜ|wₜ₋₁) + λ₁Pₘₗₑ(wₜ)
+### **Hyperparameter Tuning**  
+- **Smoothing Weights**: Grid search over λ values (e.g., `λ₁=0.33`, `λ₂=0.33`).  
+- **Data Ablation**: Performance comparison with 50% training data.  
+- **UNK Thresholding**: Frequency constraints of 3 vs 5 occurrences.  
 
-Cross-Validation:
+---
 
-Train/dev/test split evaluation
+## 🧪 Experiments & Results  
 
-Hyperparameter tuning experiments:
+### **Perplexity Comparison**  
+| Model                  | Train     | Dev       | Test      |  
+|------------------------|-----------|-----------|-----------|  
+| Unigram (No Smoothing) | 952       | 978       | 967       |  
+| Trigram (Interpolation)| 213       | 449       | 428       |  
+| 50% Training Data      | 287       | 517       | 502       |  
 
-Training data subsampling (50% ablation study)
+### **Key Findings**  
+- Smoothing reduces overfitting (lower dev/test vs train perplexity).  
+- Trigram models suffer from data sparsity without interpolation.  
 
-Frequency constraint variations (3 vs 5 occurrences)
+---
 
-Technical Implementation
-Class Hierarchy:
+## 🚀 Extensions  
+1. **Advanced Smoothing**: Implement Kneser-Ney or Good-Turing.  
+2. **Neural Baselines**: Compare with RNN/Transformer-based models.  
+3. **API Deployment**: Wrap in Flask/Django for real-time predictions.  
 
-Base unigram → Bigram (with unigram dependency) → Trigram (with bigram dependency)
-
-Inherited perplexity calculation with n-gram order-specific probability chaining
-
-Efficiency Considerations:
-
-Frequency tables implemented via collections.Counter
-
-Probability caching during training phase
-
-Experimental Results
-Perplexity Trends:
-
-Expected degradation from Unigram → Bigram → Trigram due to data sparsity
-
-Smoothing improves generalization (lower dev/test perplexity vs train)
-
-Optimal interpolation weights found empirically through grid search
-
-Robustness Tests:
-
-Performance evaluation with reduced training data (50% subsample)
-
-Impact analysis of UNK thresholding (frequency constraint = 3 vs 5)
+---

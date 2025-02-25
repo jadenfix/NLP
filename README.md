@@ -1,7 +1,6 @@
----
 
-# N-Gram Language Model  
-*A statistical language model for sequence probability estimation and next-word prediction.*  
+## N-Gram Language Model  
+**A statistical language model for sequence probability estimation and next-word prediction.*  
 
 ---
 

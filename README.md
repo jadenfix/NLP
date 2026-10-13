@@ -97,3 +97,15 @@ print(f"Test Perplexity: {model.perplexity(test_data):.2f}")
 3. **API Deployment**: Wrap in Flask/Django for real-time predictions.  
 
 ---
+
+## Runnable offline example
+
+The notebook definitions are available in `ngram.py`. No third-party packages or benchmark downloads are needed for this small example:
+
+```bash
+python demo.py
+python demo.py --text "the agent tests the system"
+python -m unittest -v
+```
+
+Supply `--train path/to/sentences.txt` for your own corpus. The built-in corpus is an explicitly labeled toy fixture, not a trained production model or a reproduction of the original benchmark. The notebook still requires the missing `NLP/1b_benchmark.*.tokens` files for its historical experiment. Zero probabilities use the original notebook floor of 1e-10; reported perplexities are therefore floored scores.

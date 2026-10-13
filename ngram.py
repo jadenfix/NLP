@@ -118,7 +118,9 @@ class Bigram:
     entropy = 0
     for sent in processed_corpus:
       # if not exist(unseen bigram), just give 0, and we will handle it in the log_joint_probs function
-      probs = [self.vocab_prob.get(bigram, 0) for bigram in self.get_bigrams(sent)]
+      probs = [self.vocab_prob[bigram] if bigram in self.vocab_prob else
+               self.MLE(bigram, self.smoothing, self.l1, self.l2)
+               for bigram in self.get_bigrams(sent)]
       entropy += self.log_joint_probs(probs)
     l = entropy / m
     return pow(2, -l)
@@ -130,15 +132,21 @@ class Bigram:
   def handle_zero_prob(self):
     return pow(10, -10)
   def train_bigram(self, train_corpus, smoothing=None, l1=0, l2=1):
+      if self.unigram is None:
+        raise ValueError("Set a trained unigram before training a bigram")
+      if smoothing and (not all(math.isfinite(w) and w >= 0 for w in (l1, l2))
+                        or not math.isclose(l1 + l2, 1)):
+        raise ValueError("Interpolation weights must be finite, nonnegative, and sum to 1")
       self.smoothing = smoothing
       self.l1 = l1
       self.l2 = l2
       self.vocab_freq = get_vocab_freq([self.get_bigrams(sent) for sent in train_corpus])
+      self.vocab_prob = {}
       for bigram in self.vocab_freq.keys():
         self.vocab_prob[bigram] = self.MLE(bigram, smoothing, l1, l2)
   def MLE(self, bigram, smoothing=None, l1=0, l2=1):
     if smoothing : 
-      return self.bigram_prob_with_interpolation(bigram, l1, l2)
+      return self.bigram_prob_interpolation(bigram, l1, l2)
     else:
       return self.bigram_prob(bigram)
   def get_bigrams(self, sent):
@@ -148,9 +156,10 @@ class Bigram:
     # excluding the <START> token
     return len(self.unigram.vocab_freq.keys()) - 1
   def bigram_prob(self, bigram):
-    return (self.vocab_freq.get(bigram, 0) / self.unigram.vocab_freq[bigram[0]])
+    count = self.unigram.vocab_freq.get(bigram[0], 0)
+    return self.vocab_freq.get(bigram, 0) / count if count else 0
   def bigram_prob_interpolation(self, bigram, l1=0, l2=1):
-    return l2 * self.bigram_prob(bigram) + l1 * self.unigram.word_prob(bigram[1])
+    return l2 * self.bigram_prob(bigram) + l1 * self.unigram.vocab_prob.get(bigram[1], 0)
 
 
 class Trigram:

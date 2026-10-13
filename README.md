@@ -21,7 +21,7 @@
 - **Trigram (3-gram)**: Extended context modeling with two preceding words.  
 
 ### **Smoothing Techniques**  
-- **Add-k Smoothing**: Mitigates zero-probability issues by adding constant `k` to counts.  
+- **Add-k Smoothing**: Not implemented in the extracted offline module.
 - **Linear Interpolation**: Blends probabilities across n-gram orders using weights (`λ₁`, `λ₂`, `λ₃`).  
 
 ### **Preprocessing**  
@@ -39,9 +39,9 @@
 ### **Class Hierarchy**  
 | Class       | Description                                                                 |  
 |-------------|-----------------------------------------------------------------------------|  
-| `Unigram`   | Base frequency model with add-k smoothing support.                          |  
-| `Bigram`    | Inherits from `Unigram`; implements bigram MLE and interpolation.           |  
-| `Trigram`   | Inherits from `Bigram`; calculates trigram probabilities with backoff.      |  
+| `Unigram`   | Base frequency model; no lower-order interpolation or add-k implementation. |
+| `Bigram`    | Holds a trained `Unigram`; implements bigram MLE and interpolation.          |
+| `Trigram`   | Holds a trained `Bigram`; calculates trigram probabilities with backoff.     |
 
 ### **Core Methods**  
 - `train_regular()`: Trains vanilla n-gram models using Maximum Likelihood Estimation (MLE).  
@@ -64,8 +64,11 @@
 ### **Training**  
 ```python  
 # Conceptual Example  
-train_data = load_data("corpus.txt")  
-model = train_interpolation_trigram(train_data, l1=0.3, l2=0.3, l3=0.4)  
+from ngram import load_data, tokenize, get_pretrained_bigram, train_interpolation_trigram
+train_data = tokenize(load_data("corpus.txt"))
+test_data = tokenize(load_data("test.txt"))
+pretrained = get_pretrained_bigram(train_data)
+model = train_interpolation_trigram(train_data, pretrained, l1=0.3, l2=0.3, l3=0.4)
 print(f"Test Perplexity: {model.perplexity(test_data):.2f}")  
 ```  
 
@@ -109,3 +112,19 @@ python -m unittest -v
 ```
 
 Supply `--train path/to/sentences.txt` for your own corpus. The built-in corpus is an explicitly labeled toy fixture, not a trained production model or a reproduction of the original benchmark. The notebook still requires the missing `NLP/1b_benchmark.*.tokens` files for its historical experiment. Zero probabilities use the original notebook floor of 1e-10; reported perplexities are therefore floored scores.
+
+### Bigram interpolation example
+
+```python
+from ngram import Bigram, tokenize, train_regular
+corpus = tokenize(["a b", "a c"])
+model = Bigram()
+model.set_unigram(train_regular(corpus, 1))
+model.train_bigram(corpus, smoothing=True, l1=0.3, l2=0.7)
+print(model.perplexity(tokenize(["a a"])))  # 5.0 (up to floating-point rounding)
+```
+
+The weights must be finite, nonnegative, and sum to one. Unseen transitions
+receive their unigram component when smoothing is enabled; unknown words with
+no trained `<UNK>` mass still use the existing numerical floor. These toy checks
+validate the formulas and runnable API, not the historical benchmark results.

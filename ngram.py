@@ -196,6 +196,8 @@ class Trigram:
 
   def MLE_log_with_sentence(self, sent):
     trigrams = self.get_trigrams(sent)
+    if not trigrams:
+      return [self.bigram.bigram_prob((START_TOKEN, STOP_TOKEN))]
     first_trigram = trigrams[0]
     # need to calculate the P(w1 | <START>)
     w1_start_bigram = (first_trigram[0], first_trigram[1])

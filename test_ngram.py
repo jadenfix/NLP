@@ -22,5 +22,13 @@ class NGramTests(unittest.TestCase):
             self.assertTrue(math.isfinite(score))
             self.assertGreaterEqual(score, 1)
 
+class EmptySentenceTests(unittest.TestCase):
+    def test_empty_sentence_can_be_scored_for_all_orders(self):
+        corpus=tokenize(["one two", "one three", ""])
+        for order in (1,2,3):
+            score=train_regular(corpus,order).perplexity(tokenize([""]))
+            self.assertTrue(math.isfinite(score))
+            self.assertGreaterEqual(score,1)
+
 if __name__ == '__main__':
     unittest.main()
